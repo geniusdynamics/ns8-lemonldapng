@@ -57,6 +57,7 @@ images+=("${repobase}/${reponame}")
 # 3. append the image url to the images array
 #
 
+
 #
 # Setup CI when pushing to Github. 
 # Warning! docker::// protocol expects lowercase letters (,,)
