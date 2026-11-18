@@ -1,4 +1,4 @@
-# <img src="https://github.com/ksat-design/ns8-ksatdesign/blob/repomd/ns8/updates/lemonldapng/logo.png" width="5%" alt="NS8 Logo"> NS8 LemonLDAP::NG Module
+# <img src="ui/src/assets/module_default_logo.png" width="5%" alt="LemonLDAP::NG"> NS8 LemonLDAP::NG Module
 
 ## 📦 Install
 
