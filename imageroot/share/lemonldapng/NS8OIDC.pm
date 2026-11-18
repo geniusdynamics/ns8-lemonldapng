@@ -10,7 +10,7 @@ extends 'Lemonldap::NG::Portal::Main::Plugin';
 
 use constant hook => {
     oidcGenerateMetadata              => 'metadata',
-    oidcValidateRedirectUri           => 'validateLogout',
+    oidcValidateRedirectUri           => 'validateRedirect',
     oidcGenerateIntrospectionResponse => 'introspect',
     oidcGenerateTokenResponse         => 'tokenCors',
     oidcGenerateUserInfoResponse      => 'userInfoCors',
@@ -92,14 +92,19 @@ sub metadata {
     return PE_OK;
 }
 
-sub validateLogout {
+sub validateRedirect {
     my ($self, $req, $rp, $uri, $endpoint, $state) = @_;
-    return PE_OK unless $endpoint eq 'end_session' && $self->owner($rp);
+    return PE_OK unless $self->owner($rp);
+    my $options = $self->conf->{oidcRPMetaDataOptions}->{$rp};
+    if ($options->{oidcRPMetaDataOptionsRedirectUris} eq 'https://invalid.invalid/ns8-introspection-only') {
+        $state->{result} = 0;
+        return PE_DONE;
+    }
+    return PE_OK unless $endpoint eq 'end_session';
     unless ($uri =~ m{\A[\x21-\x7e]+\z} && $uri !~ /\\/) {
         $state->{result} = 0;
         return PE_DONE;
     }
-    my $options = $self->conf->{oidcRPMetaDataOptions}->{$rp};
     for my $allowed (split /\s+/, ($options->{oidcRPMetaDataOptionsPostLogoutRedirectUris} // '')) {
         if ($allowed eq $uri ||
             ($allowed =~ m{\A(https?://[^/]+/)\*\z} && index($uri, $1) == 0)) {
@@ -114,12 +119,13 @@ sub validateLogout {
 sub introspect {
     my ($self, $req, $response, $rp, $token) = @_;
     my $client = $self->owner($rp);
-    return PE_OK unless $client;
-
     my $source = $token->{rp};
+    my $source_owner = $source && $self->owner($source);
+    return PE_OK unless $client || $source_owner;
+
     my $clients = $self->conf->{oidcRPMetaDataOptions};
     unless (
-        $source && $self->owner($source)
+        $client && $source_owner
         && ($clients->{$source}->{oidcRPMetaDataOptionsActivation} // 1)
         && grep { $_ eq $client } @{$response->{aud} // []}
     ) {

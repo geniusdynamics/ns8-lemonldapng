@@ -24,6 +24,7 @@ RP_OPTIONS = "oidcRPMetaDataOptions"
 RP_PREFIX = "ns8-"
 OWNER_COMMENT = "NS8 OIDC client for "
 PLUGIN = "Lemonldap::NG::Portal::Plugins::NS8OIDC"
+NO_REDIRECT = "https://invalid.invalid/ns8-introspection-only"
 RP_MAPS = (
     RP_OPTIONS, "oidcRPMetaDataExportedVars", "oidcRPMetaDataMacros",
     "oidcRPMetaDataScopeRules", "oidcRPMetaDataOptionsExtraClaims",
@@ -321,6 +322,8 @@ def register(request):
         validation("module_id", "", "module_id_required")
 
     redirects = request.get("redirect_uris", [])
+    if NO_REDIRECT in redirects:
+        validation("redirect_uris", "", "invalid_uri")
     origins = {checked_uri(uri, "redirect_uris") for uri in redirects}
     logout_uris = request.get("post_logout_redirect_uris", [f"{o}/*" for o in sorted(origins)])
     for uri in logout_uris:
@@ -359,7 +362,8 @@ def register(request):
                 "ClientID": module_id,
                 "ClientSecret": secret,
                 "Comment": OWNER_COMMENT + module_id + "\n" + " ".join(web_origins),
-                "RedirectUris": " ".join(redirects),
+                # The Manager requires a URI even for a client that can only introspect.
+                "RedirectUris": " ".join(redirects) or NO_REDIRECT,
                 "PostLogoutRedirectUris": " ".join(logout_uris),
                 "AdditionalAudiences": " ".join(request.get("audience", [])),
                 "Public": 0,

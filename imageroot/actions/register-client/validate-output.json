@@ -8,7 +8,7 @@
             "client_id": "nextcloud1",
             "client_secret": "2Gv4...",
             "realm": "dp.example.org",
-            "issuer": "https://sso.example.org/realms/dp.example.org"
+            "issuer": "https://auth.sso.example.org/ns8-realms/dp.example.org"
         }
     ],
     "type": "object",
