@@ -72,18 +72,18 @@ Provision the LDAP directory and portal
 Upgrade a configured legacy instance with LDAP, sessions and custom Nginx
     Skip If    '${SCENARIO}' != 'update'    Install scenario
     Configure portal    false
-    Running image is    docker.io/coudot/lemonldap-ng:2.20.2
+    Wait Until Keyword Succeeds    45s    3s    Running image is    docker.io/coudot/lemonldap-ng:2.20.2
     Wait Until Keyword Succeeds    40s    4s    Login via Traefik    http    no
     In portal container    sh -c 'printf "# NS8 CI custom site\\n" > /etc/nginx/sites-enabled/ci-custom.conf && touch /var/lib/lemonldap-ng/sessions/ci-session /var/lib/lemonldap-ng/psessions/ci-psession'
     Run successfully    api-cli run update-module --data '{"force":true,"module_url":"${IMAGE_URL}","instances":["${module_id}"]}'
-    Running image is    ${RUNTIME_IMAGE}
+    Wait Until Keyword Succeeds    45s    3s    Running image is    ${RUNTIME_IMAGE}
     Wait Until Keyword Succeeds    40s    4s    Login via Traefik    http    no
     In portal container    sh -c 'grep -q "# NS8 CI custom site" /etc/nginx/sites-enabled/ci-custom.conf && test -f /var/lib/lemonldap-ng/sessions/ci-session && test -f /var/lib/lemonldap-ng/psessions/ci-psession'
     Run successfully    runagent -m ${module_id} sh -c 'test -n "$(find upgrade-backups -name "*.tar.gz" -print -quit)"'
 
 Configure Traefik HTTPS and verify a secure session cookie
     Configure portal    true
-    Running image is    ${RUNTIME_IMAGE}
+    Wait Until Keyword Succeeds    45s    3s    Running image is    ${RUNTIME_IMAGE}
     In portal container    grep -Fq "fastcgi_param HTTP_HOST" /etc/nginx/sites-enabled/portal-nginx.conf
     Wait Until Keyword Succeeds    40s    4s    Login via Traefik    https    yes
     ${out} =    Run successfully    api-cli run module/${module_id}/get-configuration
