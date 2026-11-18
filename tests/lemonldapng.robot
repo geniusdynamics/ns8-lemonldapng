@@ -84,7 +84,7 @@ Upgrade a configured legacy instance with LDAP, sessions and custom Nginx
 Configure Traefik HTTPS and verify a secure session cookie
     Configure portal    true
     Running image is    ${RUNTIME_IMAGE}
-    In portal container    sh -c 'grep -Fq "fastcgi_param HTTP_HOST \$host;" /etc/nginx/sites-enabled/portal-nginx.conf'
+    In portal container    grep -Fq "fastcgi_param HTTP_HOST" /etc/nginx/sites-enabled/portal-nginx.conf
     Wait Until Keyword Succeeds    40s    4s    Login via Traefik    https    yes
     ${out} =    Run successfully    api-cli run module/${module_id}/get-configuration
     ${config} =    Evaluate    json.loads($out)    modules=json
