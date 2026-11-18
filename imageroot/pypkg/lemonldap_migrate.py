@@ -83,6 +83,20 @@ def replace_file(path, text):
             temporary_path.unlink(missing_ok=True)
 
 
+def check_oidc_logout(conf):
+    """Check the latest file configuration without guessing external endpoints."""
+    revisions = [path for path in conf.glob("lmConf-*.json")
+                 if path.stem.removeprefix("lmConf-").isdigit()]
+    if not revisions:
+        return
+    latest = max(revisions, key=lambda path: int(path.stem.removeprefix("lmConf-")))
+    settings = json.loads(latest.read_text())
+    for name, options in (settings.get("oidcRPMetaDataOptions") or {}).items():
+        if name and isinstance(options, dict) and not options.get("oidcRPMetaDataOptionsPostLogoutRedirectUris"):
+            print(f"OIDC relying party {name!r} has no allowed post-logout redirect URI. "
+                  "Review its logout settings in the Manager.", file=sys.stderr)
+
+
 def migrate(state, runtime, host, etc, conf, nginx, templates):
     """Stage the snapshot before changing any packaged virtual host."""
     known_file = Path(__file__).with_name("stock-lemonldap-vhosts.json")
@@ -91,6 +105,7 @@ def migrate(state, runtime, host, etc, conf, nginx, templates):
     if not fresh:
         backup = snapshot(state, {"etc": etc, "var-conf": conf, "nginx": nginx})
         print(f"LemonLDAP::NG upgrade backup: {backup}", file=sys.stderr)
+        check_oidc_logout(conf)
     with tarfile.open(templates) as archive:
         for name, digests in known.items():
             site = nginx / name
