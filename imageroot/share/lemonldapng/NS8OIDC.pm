@@ -95,6 +95,10 @@ sub metadata {
 sub validateLogout {
     my ($self, $req, $rp, $uri, $endpoint, $state) = @_;
     return PE_OK unless $endpoint eq 'end_session' && $self->owner($rp);
+    unless ($uri =~ m{\A[\x21-\x7e]+\z} && $uri !~ /\\/) {
+        $state->{result} = 0;
+        return PE_DONE;
+    }
     my $options = $self->conf->{oidcRPMetaDataOptions}->{$rp};
     for my $allowed (split /\s+/, ($options->{oidcRPMetaDataOptionsPostLogoutRedirectUris} // '')) {
         if ($allowed eq $uri ||

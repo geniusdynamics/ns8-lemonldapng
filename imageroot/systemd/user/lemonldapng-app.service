@@ -54,6 +54,7 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/lemonldapng-app.pid \
     ${LEMONLDAP_NG_IMAGE}
 ExecStartPost=/usr/local/bin/runagent apply-lemonldap-settings
 ExecStartPost=/usr/local/bin/runagent wait-lemonldap-portal
+ExecStartPost=-/usr/local/bin/runagent reconcile-ns8-sso --starting
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/lemonldapng-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP lemonldapng-app
 SyslogIdentifier=%u

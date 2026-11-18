@@ -26,7 +26,7 @@ OWNER_COMMENT = "NS8 OIDC client for "
 PLUGIN = "Lemonldap::NG::Portal::Plugins::NS8OIDC"
 RP_MAPS = (
     RP_OPTIONS, "oidcRPMetaDataExportedVars", "oidcRPMetaDataMacros",
-    "oidcRPMetaDataScopeRules", "oidcRPMetaDataOptionsExtraClaims", "oidcRPMetaDataJWKS",
+    "oidcRPMetaDataScopeRules", "oidcRPMetaDataOptionsExtraClaims",
 )
 ISSUER_SETTINGS = {
     "issuerDBOpenIDConnectActivation": 1,
@@ -104,7 +104,7 @@ def portal_config():
         raise SystemExit("Could not read LemonLDAP::NG configuration")
     try:
         config = json.loads(result.stdout)
-        if not isinstance(config, dict) or not isinstance(config.get("cfgNum"), int):
+        if not isinstance(config, dict) or not str(config.get("cfgNum")).isdigit():
             raise ValueError
     except ValueError:
         raise SystemExit("Invalid LemonLDAP::NG configuration response") from None
@@ -267,7 +267,7 @@ def configure(enabled):
         if settings["issuer"] != issuer():
             validation("enabled", enabled, "issuer_changed")
 
-        plugins = re.split(r"[,\s]+", config.get("customPlugins", "").strip())
+        plugins = re.split(r"[,\s]+", (config.get("customPlugins") or "").strip())
         update = {
             **ISSUER_SETTINGS,
             "customPlugins": ", ".join(dict.fromkeys(filter(None, [*plugins, PLUGIN]))),
@@ -383,10 +383,10 @@ def register(request):
         return {"client_id": module_id, "client_secret": secret, "realm": domain, "issuer": issuer()}
 
 
-def reconcile():
+def reconcile(*, starting=False):
     with oidc_lock():
         settings = saved_settings()
-        if not settings or not active():
+        if not settings or (not starting and not active()):
             return
         rdb = agent.redis_connect()
         domain = os.environ.get("LDAP_DOMAIN")

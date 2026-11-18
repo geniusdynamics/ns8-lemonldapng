@@ -54,7 +54,7 @@ Login via Traefik
 
 Remove fixtures
     Execute Command    redis-cli --no-auth-warning hdel cluster/module_domains ${OIDC_APP} ${OIDC_MAIL}
-    Execute Command    rm -f /root/lemon-app.json /root/lemon-mail.json /root/lemon-app-repeat.json
+    Execute Command    rm -f /root/lemon-app.json /root/lemon-mail.json /root/lemon-app-repeat.json /root/lemon-app-rotated.json
     IF    '${module_id}' != ''
         Run successfully    remove-module --no-preserve ${module_id}
     END
@@ -109,6 +109,8 @@ The portal stays available after restarting both services
 Enable SSO only on request and publish the LDAP issuer
     ${available} =    Run successfully    redis-cli --no-auth-warning exists module/${module_id}/srv/http/oidc
     Should Be Equal As Integers    ${available}    0
+    ${grant} =    Run successfully    redis-cli --no-auth-warning sismember module/${module_id}/roles/clientadm register-client
+    Should Be Equal As Integers    ${grant}    1
     Run successfully    api-cli run module/${module_id}/configure-ns8-sso --data '{"enabled":true}'
     ${prefix} =    Run successfully    redis-cli --no-auth-warning hget module/${module_id}/srv/http/oidc issuer_url_prefix
     Should Be Equal    ${prefix}${LDAP_DOMAIN}    ${OIDC_ISSUER}
@@ -126,7 +128,14 @@ Register clients and sign on using the existing LDAP account
     Wait Until Keyword Succeeds    30s    2s    Run successfully    umask 077 && api-cli run module/${module_id}/register-client --data '${app_data}' > /root/lemon-app.json
     Run successfully    umask 077 && api-cli run module/${module_id}/register-client --data '${mail_data}' > /root/lemon-mail.json
     Run successfully    umask 077 && api-cli run module/${module_id}/register-client --data '${app_data}' > /root/lemon-app-repeat.json && cmp /root/lemon-app.json /root/lemon-app-repeat.json
-    Wait Until Keyword Succeeds    40s    4s    Run successfully    jq -n --slurpfile app /root/lemon-app.json --slurpfile mail /root/lemon-mail.json '{app:$app[0],mail:$mail[0]}' | python3 ${OIDC_TEST} auth.${HOST} ${OIDC_ISSUER} ${LDAP_USER} ${LDAP_PASSWORD}
+    ${rotated} =    Evaluate    json.dumps({**json.loads($app_data), 'rotate_secret': True}, separators=(',', ':'))    modules=json
+    Run successfully    umask 077 && api-cli run module/${module_id}/register-client --data '${rotated}' > /root/lemon-app-rotated.json && ! cmp -s /root/lemon-app.json /root/lemon-app-rotated.json
+    Wait Until Keyword Succeeds    40s    4s    Run successfully    jq -n --slurpfile app /root/lemon-app-rotated.json --slurpfile mail /root/lemon-mail.json '{app:$app[0],mail:$mail[0]}' | python3 ${OIDC_TEST} auth.${HOST} ${OIDC_ISSUER} ${LDAP_USER} ${LDAP_PASSWORD}
+
+Remove a client's registration after its module leaves the user domain
+    Run successfully    redis-cli --no-auth-warning hdel cluster/module_domains ${OIDC_MAIL}
+    Run successfully    redis-cli --no-auth-warning publish cluster/event/module-domain-changed '{"modules":["${OIDC_MAIL}"],"domains":["${LDAP_DOMAIN}"]}'
+    Wait Until Keyword Succeeds    30s    2s    In portal container    sh -c '/usr/share/lemonldap-ng/bin/lemonldap-ng-cli save 2>/dev/null | grep -q ns8-${OIDC_APP} && ! /usr/share/lemonldap-ng/bin/lemonldap-ng-cli save 2>/dev/null | grep -q ns8-${OIDC_MAIL}'
 
 Withdraw the provider and retain the LDAP portal
     Run successfully    api-cli run module/${module_id}/configure-ns8-sso --data '{"enabled":false}'
