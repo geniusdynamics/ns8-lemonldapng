@@ -5,9 +5,9 @@ Suite Teardown    Remove fixtures
 
 *** Variables ***
 ${SCENARIO}       install
-${RELEASE_IMAGE}  ghcr.io/ksat-design/lemonldapng:1.0.1
+${RELEASE_IMAGE}  ghcr.io/geniusdynamics/lemonldapng:1.1.0
 ${LDAP_IMAGE}     ghcr.io/nethserver/openldap:2.8.1
-${RUNTIME_IMAGE}  docker.io/lemonldapng/lemonldap-ng:2.21.3
+${RUNTIME_IMAGE}  docker.io/lemonldapng/lemonldap-ng:2.23.4
 ${LDAP_DOMAIN}    lemon-ci.test
 ${HOST}           sso.lemon-ci.test
 ${LDAP_USER}      admin
@@ -72,7 +72,7 @@ Provision the LDAP directory and portal
 Upgrade a configured legacy instance with LDAP, sessions and custom Nginx
     Skip If    '${SCENARIO}' != 'update'    Install scenario
     Configure portal    false
-    Wait Until Keyword Succeeds    45s    3s    Running image is    docker.io/coudot/lemonldap-ng:2.20.2
+    Wait Until Keyword Succeeds    45s    3s    Running image is    docker.io/lemonldapng/lemonldap-ng:2.21.3
     Wait Until Keyword Succeeds    40s    4s    Login via Traefik    http    no
     In portal container    sh -c 'printf "# NS8 CI custom site\\n" > /etc/nginx/sites-enabled/ci-custom.conf && touch /var/lib/lemonldap-ng/sessions/ci-session /var/lib/lemonldap-ng/psessions/ci-psession'
     Run successfully    api-cli run update-module --data '{"force":true,"module_url":"${IMAGE_URL}","instances":["${module_id}"]}'
