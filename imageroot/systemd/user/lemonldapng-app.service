@@ -30,6 +30,8 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/lemonldapng-app.pid \
         --env MANAGER_HOSTNAME=manager.${TRAEFIK_HOST} \
         --env HANDLER_HOSTNAME=reload.${TRAEFIK_HOST} \
         --env PRESERVEFILES="/etc/lemonldap-ng /var/lib/lemonldap-ng/conf /var/lib/lemonldap-ng/sessions /var/lib/lemonldap-ng/psessions /etc/nginx/sites-enabled" \
+        --health-cmd "curl --fail --silent --max-time 2 --output /dev/null --header 'Host: auth.${TRAEFIK_HOST}' http://127.0.0.1/" \
+        --health-interval=30s --health-timeout=3s --health-retries=3 --health-start-period=30s \
         --env LOGLEVEL=error \
         --env FASTCGI_LISTEN_PORT=9000 \
         --env PORT=80 \
