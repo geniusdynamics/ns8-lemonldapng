@@ -5,7 +5,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 import agent
-import subprocess
+from lemonldap_cli import apply_settings
+
 
 enabled = agent.read_envfile("smarthost.env").get("SMTP_ENABLED", "")
 SMTPAuthPass = agent.read_envfile("smarthost.env").get("SMTP_PASSWORD", "")
@@ -36,4 +37,4 @@ else:
         "SMTPPort"
         ]
 
-subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+apply_settings(command, "SMTP")

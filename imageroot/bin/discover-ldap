@@ -10,6 +10,7 @@
 #
 
 import os
+from tempfile import NamedTemporaryFile
 import agent
 from agent.ldapproxy import Ldapproxy
 
@@ -17,8 +18,9 @@ udomname = os.environ.get('LDAP_DOMAIN','')
 
 try:
     odom = Ldapproxy().get_domain(udomname)
-    'host' in odom # Throw exception if odom is None
-except:
+    if not odom:
+        raise ValueError("LDAP domain is unavailable")
+except Exception:
     # During restore the domain could be unavailable. Use a fallback
     # configuration, pointing to nowhere, just to set the variables.
     # Once the domain becomes available, the event will fix them.
@@ -32,9 +34,7 @@ except:
         'bind_password': 'invalid',
     }
 
-tmpfile = "discover.env." + str(os.getpid())
-
-with open(tmpfile, "w") as denv:
+with NamedTemporaryFile(mode="w", dir=".", delete=False) as denv:
     print('LDAP_PORT=' + str(odom['port']), file=denv)
     print('LDAP_USER=' + odom['bind_dn'], file=denv)
     print('LDAP_HOST=' + odom['host'], file=denv)
@@ -42,4 +42,4 @@ with open(tmpfile, "w") as denv:
     print('LDAP_SCHEMA=' + odom['schema'], file=denv)
     print('LDAP_BASE=' + odom['base_dn'], file=denv)
 
-os.replace(tmpfile, "discovery_ldap.env")
+os.replace(denv.name, "discovery_ldap.env")

@@ -7,7 +7,8 @@
 import agent
 import sys
 import os
-import subprocess
+from lemonldap_cli import apply_settings
+
 
 schema = agent.read_envfile("discovery_ldap.env").get("LDAP_SCHEMA", "")
 ldap_base = agent.read_envfile("discovery_ldap.env").get("LDAP_BASE", "")
@@ -34,7 +35,7 @@ if schema == "rfc2307":
         "managerDn",  ldap_user,
         "managerPassword", ldap_pass
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
@@ -48,7 +49,7 @@ if schema == "rfc2307":
         "ldapGroupRecursive", "1",
         "ldapGroupAttributeNameGroup", "dn"
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
@@ -62,21 +63,21 @@ if schema == "rfc2307":
         "ldapExportedVars", "uid", "uid",
         "ldapExportedVars", "group", "memberUid"
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
         "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "delKey",
         "locationRules/", "manager."+os.environ['TRAEFIK_HOST']
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
         "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "addKey",
         "locationRules/manager."+os.environ['TRAEFIK_HOST'], "default", '$uid eq administrator or inGroup("domain admins")'
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
 elif schema == "ad":
     print ("Setting LDAP settings for AD schema", file=sys.stderr)
@@ -93,7 +94,7 @@ elif schema == "ad":
         "managerDn",  ldap_user, 
         "managerPassword", ldap_pass
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
@@ -108,7 +109,7 @@ elif schema == "ad":
         "ldapGroupDecodeSearchedValue", "1",
         "ldapGroupAttributeNameGroup", "dn"
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
@@ -122,18 +123,18 @@ elif schema == "ad":
         "ldapExportedVars", "displayName", "displayName",
         "ldapExportedVars", "uid", "sAMAccountName"
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
         "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "delKey",
         "locationRules/", "manager."+os.environ['TRAEFIK_HOST']
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
 
     command = [
         "podman", "exec", "lemonldapng-app",
         "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "addKey",
         "locationRules/manager."+os.environ['TRAEFIK_HOST'], "default", '$uid eq administrator or inGroup("domain admins")'
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "LDAP")
