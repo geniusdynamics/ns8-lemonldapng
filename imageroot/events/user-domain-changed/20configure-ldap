@@ -18,4 +18,4 @@ if event.get('domain') != os.getenv('LDAP_DOMAIN'):
 if 'node' in event and str(event['node']) != os.getenv('NODE_ID'):
     exit(0) # ignore event if the source is not in our node
 
-agent.run_helper('systemctl', '--user', '-T', 'try-restart', 'lemonldapng.service').check_returncode()
+agent.run_helper('systemctl', '--user', 'try-restart', 'lemonldapng.service', 'lemonldapng-app.service').check_returncode()

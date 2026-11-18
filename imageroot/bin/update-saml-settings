@@ -6,7 +6,8 @@
 #
 import sys
 import os
-import subprocess
+from lemonldap_cli import apply_settings
+
 
 # does saml is enabled in the UI (default is disabled)
 saml_status = os.getenv("SAML_STATUS", "False") == "True" # make boolean
@@ -22,7 +23,7 @@ if not saml_status:
         "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "set",
         "issuerDBSAMLActivation", "0"
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "SAML")
 
 else:
     print("SAML is enabled, setting SAML settings", file=sys.stderr)
@@ -43,4 +44,4 @@ else:
         "samlServicePublicKeySig", saml_pem,
         "samlEntityID", "https://"+os.environ["TRAEFIK_HOST"]+"/saml/metadata",
         ]
-    subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+    apply_settings(command, "SAML")

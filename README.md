@@ -1,11 +1,11 @@
-# <img src="https://github.com/ksat-design/ns8-ksatdesign/blob/repomd/ns8/updates/lemonldapng/logo.png" width="5%" alt="NS8 Logo"> NS8 LemonLDAP::NG Module
+# <img src="ui/src/assets/module_default_logo.png" width="5%" alt="LemonLDAP::NG"> NS8 LemonLDAP::NG Module
 
 ## 📦 Install
 
 Install the module with:
 
 ```bash
-add-module ghcr.io/ksat-design/lemonldapng:latest 1
+add-module ghcr.io/geniusdynamics/lemonldapng:1.1.0 1
 ```
 
 Sample output:
@@ -14,7 +14,7 @@ Sample output:
 {
   "module_id": "lemonldapng1",
   "image_name": "lemonldapng",
-  "image_url": "ghcr.io/ksat-design/lemonldapng:latest"
+  "image_url": "ghcr.io/geniusdynamics/lemonldapng:1.1.0"
 }
 ```
 
@@ -84,8 +84,8 @@ Available subfolders:
 |---------------|-------------------------------|
 | `etc`         | `/etc/lemonldap-ng`           |
 | `var-conf`    | `/var/lib/lemonldap-ng/conf`  |
-| `var-psessions` | `/var/lib/lemonldap-ng/sessions` |
-| `var-sessions` | `/var/lib/lemonldap-ng/psessions` |
+| `var-sessions` | `/var/lib/lemonldap-ng/sessions` |
+| `var-psessions` | `/var/lib/lemonldap-ng/psessions` |
 | `nginx`       | `/etc/nginx/sites-enabled`    |
 
 To access:
@@ -117,76 +117,32 @@ This starts and configures the module and sets up a Traefik virtual host.
 
 ---
 
-## 🛠️ Sync Configuration Schema
+## Upgrade from KSAT Design 1.0.1
 
-> ⚠️ **Issue Notice**  
-> After reboot or restore, `configure-module` may fail due to outdated schema examples.  
-> **We will include this fix in the next update.**
-
-### Temporary Fix Script
-
-Create `sync-lemonldapng-schema-example.sh`:
-
-<details>
-<summary>Click to expand script</summary>
+The migration checkpoint keeps the existing NS8 instance and changes the
+runtime from `coudot/lemonldap-ng:2.20.2` to
+`lemonldapng/lemonldap-ng:2.21.3`. Schedule the restart in a maintenance
+window and take an NS8 backup before updating.
 
 ```bash
-#!/bin/bash
-
-echo "🔍 Scanning for available LemonLDAP-NG modules in /home..."
-MODULES=($(ls -d /home/lemonldapng* 2>/dev/null | xargs -n1 basename))
-
-if [ ${#MODULES[@]} -eq 0 ]; then
-  echo "❌ No lemonldapng modules found under /home."
-  exit 1
-fi
-
-echo "📦 Available modules:"
-select MODULE in "${MODULES[@]}"; do
-  if [[ -n "$MODULE" ]]; then
-    echo "✅ Selected module: $MODULE"
-    break
-  else
-    echo "❌ Invalid selection. Please try again."
-  fi
-done
-
-CONFIG_DIR="/home/$MODULE/.config/actions/configure-module"
-GET_CONF_SCRIPT="/home/$MODULE/.config/actions/get-configuration/20read"
-SCHEMA="$CONFIG_DIR/validate-input.json"
-BACKUP="$SCHEMA.bak"
-
-TMP_JSON=$(mktemp)
-CLEAN_JSON=$(mktemp)
-
-echo "🔍 Getting current config from module..."
-runagent -m "$MODULE" bash -c "/usr/local/agent/pyenv/bin/python3 $GET_CONF_SCRIPT" > "$TMP_JSON"
-jq '{host, http2https, lets_encrypt, ldap_domain, cda_status, saml_status}' "$TMP_JSON" > "$CLEAN_JSON"
-
-echo "📦 Backing up schema..."
-runagent -m "$MODULE" bash -c "cp $SCHEMA $BACKUP"
-
-JSON_INLINE=$(cat "$CLEAN_JSON")
-
-echo "🔧 Updating validate-input.json..."
-runagent -m "$MODULE" bash <<EOF
-tmpfile="$CONFIG_DIR/tmp-validate-input.json"
-jq --argjson example '$JSON_INLINE' '.examples = [\$example]' "$SCHEMA" > "\$tmpfile"
-mv "\$tmpfile" "$SCHEMA"
-EOF
-
-runagent -m "$MODULE" bash -c "jq . $SCHEMA" >/dev/null && echo "✅ Schema updated successfully." || echo "❌ Schema update failed."
-rm -f "$TMP_JSON" "$CLEAN_JSON"
+api-cli run update-module --data '{
+  "force": true,
+  "module_url": "ghcr.io/geniusdynamics/lemonldapng:1.1.0",
+  "instances": ["lemonldapng1"]
+}'
 ```
 
-</details>
+The first start with the new image snapshots the configuration and Nginx
+volumes under `state/upgrade-backups/`. Keep these archives private.
+It refreshes the packaged Nginx sites and preserves custom sites and both
+session volumes. The service uses the existing loopback backend port and
+the configured Traefik routes. For a customized site, use the new
+image's packaged template as the reference for reviewing changes.
 
-Run it:
-
-```bash
-chmod +x sync-lemonldapng-schema-example.sh
-./sync-lemonldapng-schema-example.sh
-```
+After the upgrade, sign in via the normal portal URL and check access to
+a protected application. The configure schema accepts a static example.
+Supply the host and LDAP domain. Optional settings keep their current
+values when omitted.
 
 ---
 
@@ -252,5 +208,5 @@ podman exec lemonldapng-app env
 ## 🧪 Testing
 
 ```bash
-./test-module.sh <NODE_ADDR> ghcr.io/ksat-design/lemonldapng:latest
+./test-module.sh <NODE_ADDR> ghcr.io/geniusdynamics/lemonldapng:1.1.0
 ```

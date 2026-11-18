@@ -20,6 +20,7 @@ ExecStartPre=/bin/rm -f %t/lemonldapng-app.pid %t/lemonldapng-app.ctr-id
 ExecStartPre=/bin/bash -c '/bin/mkdir -p ./llng/{theme,template,plugins,register,userdb,auth,captcha,menutab,apps,backgrounds}'
 ExecStartPre=-runagent discover-smarthost
 ExecStartPre=/usr/local/bin/runagent discover-ldap
+ExecStartPre=/usr/local/bin/runagent prepare-lemonldap-volumes
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/lemonldapng-app.pid \
     --cidfile %t/lemonldapng-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/lemonldapng.pod-id --replace -d --name  lemonldapng-app \
@@ -28,7 +29,9 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/lemonldapng-app.pid \
         --env PORTAL_HOSTNAME=auth.${TRAEFIK_HOST} \
         --env MANAGER_HOSTNAME=manager.${TRAEFIK_HOST} \
         --env HANDLER_HOSTNAME=reload.${TRAEFIK_HOST} \
-        --env PRESERVEFILES="/etc/lemonldap-ng /var/lib/lemonldap-ng/conf /var/lib/lemonldap-ng/sessions /var/lib/lemonldap-ng/psessions /usr/share/lemonldap-ng /etc/nginx/sites-enabled /usr/share/perl5/Lemonldap/NG/Portal/Plugins /usr/share/perl5/Lemonldap/NG/Portal/Register" \
+        --env PRESERVEFILES="/etc/lemonldap-ng /var/lib/lemonldap-ng/conf /var/lib/lemonldap-ng/sessions /var/lib/lemonldap-ng/psessions /etc/nginx/sites-enabled" \
+        --health-cmd "curl --fail --silent --max-time 2 --output /dev/null --header 'Host: auth.${TRAEFIK_HOST}' http://127.0.0.1/" \
+        --health-interval=30s --health-timeout=3s --health-retries=3 --health-start-period=30s \
         --env LOGLEVEL=error \
         --env FASTCGI_LISTEN_PORT=9000 \
         --env PORT=80 \
@@ -48,11 +51,8 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/lemonldapng-app.pid \
         --volume ./llng/apps:/usr/share/lemonldap-ng/portal/htdocs/static/common/apps:Z \
         --volume ./llng/backgrounds:/usr/share/lemonldap-ng/portal/htdocs/static/common/backgrounds:Z \
     ${LEMONLDAP_NG_IMAGE}
-ExecStartPost=/usr/local/bin/runagent update-smtp-settings
-ExecStartPost=/usr/local/bin/runagent update-ldap-settings
-ExecStartPost=/usr/local/bin/runagent update-cda-settings
-ExecStartPost=/usr/local/bin/runagent update-saml-settings
-ExecStartPost=/usr/local/bin/runagent set-nethbranding
+ExecStartPost=/usr/local/bin/runagent apply-lemonldap-settings
+ExecStartPost=/usr/local/bin/runagent wait-lemonldap-portal
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/lemonldapng-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP lemonldapng-app
 SyslogIdentifier=%u

@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Apply NS8-managed portal settings only when their inputs change."""
+
+from hashlib import sha256
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+state = Path(os.environ["AGENT_STATE_DIR"])
+stamp = state / "lemonldap-managed-settings"
+environment = (
+    "MODULE_UUID", "TRAEFIK_HOST", "TRAEFIK_HTTP2HTTPS", "TRAEFIK_LETS_ENCRYPT",
+    "LDAP_DOMAIN", "CDA_STATUS", "SAML_STATUS",
+)
+inputs = ("smarthost.env", "discovery_ldap.env", "certificates/saml.pem")
+digest = sha256()
+for name in environment:
+    digest.update(f"{name}={os.environ.get(name, '')}\0".encode())
+for name in inputs:
+    path = state / name
+    digest.update(name.encode() + b"\0")
+    if path.exists():
+        digest.update(path.read_bytes())
+check = digest.hexdigest() + "\n"
+
+if stamp.exists() and stamp.read_text() == check:
+    raise SystemExit(0)
+
+# NS8 settings have already been applied to an unchanged configuration
+# during the migration checkpoint, so a later image upgrade does not
+# re-save existing SAML, CAS or OpenID Connect partner definitions.
+for script in ("update-smtp-settings", "update-ldap-settings", "update-cda-settings",
+               "update-saml-settings", "set-nethbranding"):
+    if subprocess.run([script]).returncode:
+        raise SystemExit(f"LemonLDAP::NG settings step {script} failed")
+
+with tempfile.NamedTemporaryFile(mode="w", dir=state, delete=False) as temporary:
+    path = Path(temporary.name)
+    try:
+        temporary.write(check)
+        temporary.flush()
+        path.replace(stamp)
+    finally:
+        path.unlink(missing_ok=True)
