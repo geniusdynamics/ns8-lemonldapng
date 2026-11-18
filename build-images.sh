@@ -15,7 +15,7 @@ repobase="${REPOBASE:-ghcr.io/geniusdynamics}"
 # Configure the image name
 reponame="lemonldapng"
 # renovate: datasource=docker packageName=lemonldapng/lemonldap-ng
-lemonldap_version=2.21.3
+lemonldap_version=2.23.4
 # renovate: datasource=npm packageName=corepack
 corepack_version=0.36.0
 
@@ -44,6 +44,7 @@ buildah config --entrypoint=/ \
     --label="org.nethserver.authorizations=traefik@node:routeadm cluster:accountconsumer" \
     --label="org.nethserver.tcp-ports-demand=1" \
     --label="org.nethserver.rootfull=0" \
+    --label="org.nethserver.min-from=1.1.0" \
     --label="org.nethserver.min-core=3.20.1" \
     --label="org.nethserver.images=docker.io/lemonldapng/lemonldap-ng:${lemonldap_version}" \
     "${container}"

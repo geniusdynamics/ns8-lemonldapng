@@ -1,25 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base"],
-  "ignorePaths": ["**/ui/**", "**/.devcontainer/**"],
-  "regexManagers": [
-    {
-      "fileMatch": ["build-images.sh"],
-      "matchStrings": ["docker\\.io/nginx:(?<currentValue>[-0-9\\.a-z]+)"],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "nginx"
-    },
-    {
-      "fileMatch": ["build-images.sh"],
-      "matchStrings": ["docker\\.io/mariadb:(?<currentValue>[-0-9\\.a-z]+)"],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "mariadb"
-    }
-  ],
+  "extends": ["local>NethServer/.github:ns8-automerge"],
   "packageRules": [
     {
-      "matchPackageNames": ["mariadb"],
-      "allowedVersions": "<= 10.11"
+      "description": "Check LemonLDAP::NG runtime updates with the NS8 install and upgrade suite",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["lemonldapng/lemonldap-ng"],
+      "versioning": "semver",
+      "automerge": false
     }
   ]
 }

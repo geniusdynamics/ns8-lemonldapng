@@ -5,7 +5,7 @@
 Install the module with:
 
 ```bash
-add-module ghcr.io/geniusdynamics/lemonldapng:1.1.0 1
+add-module ghcr.io/geniusdynamics/lemonldapng:2.0.0 1
 ```
 
 Sample output:
@@ -14,7 +14,7 @@ Sample output:
 {
   "module_id": "lemonldapng1",
   "image_name": "lemonldapng",
-  "image_url": "ghcr.io/geniusdynamics/lemonldapng:1.1.0"
+  "image_url": "ghcr.io/geniusdynamics/lemonldapng:2.0.0"
 }
 ```
 
@@ -117,9 +117,25 @@ This starts and configures the module and sets up a Traefik virtual host.
 
 ---
 
+## Upgrade to 2.0.0
+
+This release runs LemonLDAP::NG 2.23.4. Existing instances must first
+upgrade to module 1.1.0. GenForge keeps 1.1.0 available as the migration
+checkpoint and NS8 offers 2.0.0 after that update.
+
+Before upgrading, review the exact allowed logout redirect URIs for each
+OpenID Connect relying party. If the portal delegates sign-in to another
+OIDC provider, allow the portal’s `/oauth2/rlogoutreturn` URL at that
+provider. The upgrade preserves existing relying-party settings and reports
+missing logout allowlists in the service journal. Check partner names,
+custom handlers and custom themes against the upstream upgrade guide.
+[Upstream upgrade guide](https://lemonldap-ng.org/documentation/latest/upgrade.html)
+
 ## Upgrade from KSAT Design 1.0.1
 
-The migration checkpoint keeps the existing NS8 instance and changes the
+From the KSAT Design image, switch to Genius Dynamics 1.1.0 once using the
+command below. NS8 associates catalog updates with the installed image
+source. The migration checkpoint keeps the existing NS8 instance and changes the
 runtime from `coudot/lemonldap-ng:2.20.2` to
 `lemonldapng/lemonldap-ng:2.21.3`. Schedule the restart in a maintenance
 window and take an NS8 backup before updating.
