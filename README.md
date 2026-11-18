@@ -226,3 +226,46 @@ podman exec lemonldapng-app env
 ```bash
 ./test-module.sh <NODE_ADDR> ghcr.io/geniusdynamics/lemonldapng:1.1.0
 ```
+
+## NS8 single sign-on
+
+LemonLDAP::NG can publish an OpenID Connect provider for the NS8 user domain
+selected in the module settings. Each instance serves one LDAP domain. Configure
+a separate instance with its own portal hostname to serve another domain.
+
+Upgrades to the release that introduces NS8 SSO start from module **2.0.0**.
+The upstream LemonLDAP::NG version stays at **2.23.4**. Existing portals and
+manually managed OIDC clients keep their configuration because NS8 SSO is off
+until an administrator enables it.
+
+1. Configure the portal with an NS8 LDAP domain and HTTP to HTTPS redirection.
+   Install a TLS certificate trusted by the applications on the portal hostname.
+2. Enable the provider on the instance, substituting its module ID as needed.
+
+   ```bash
+   api-cli run module/lemonldapng1/configure-ns8-sso --data '{"enabled":true}'
+   ```
+
+3. Select LemonLDAP::NG in the consuming module's SSO settings if the module
+   supports this provider. Consumers must declare
+   `lemonldapng@any:clientadm` and bind to the same user domain.
+
+The provider's discovery URL is
+`https://auth.<portal-host>/ns8-realms/<user-domain>/.well-known/openid-configuration`.
+The Redis service record includes the served `domain` for clients that filter
+providers. Only bound modules can register their own confidential client. Their
+client secret stays the same until rotated, and registrations are removed when
+the owning module is removed or unbound. Administrators can disable a managed
+client from the LemonLDAP::NG Manager.
+
+An existing manual OIDC issuer or relying party prevents activation so it can
+keep its issuer and redirect URLs. Disable NS8 SSO before changing the configured
+portal host or LDAP domain. Disabling withdraws the service discovery record,
+removes the NS8-managed clients and restores the previous issuer settings.
+
+```bash
+api-cli run module/lemonldapng1/configure-ns8-sso --data '{"enabled":false}'
+```
+
+See the [NS8 single sign-on developer contract](https://nethserver.github.io/ns8-core/core/user_domains/#single-sign-on)
+and the [NS8 application SSO tracking issue](https://github.com/NethServer/dev/issues/8258).

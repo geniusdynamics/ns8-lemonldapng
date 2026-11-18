@@ -21,8 +21,8 @@ class HiddenInputs(HTMLParser):
             self.fields[attributes["name"]] = attributes.get("value", "")
 
 
-def request(scheme, hostname, method, body=None, cookie=""):
-    headers = {"Host": hostname}
+def request(scheme, hostname, method, body=None, cookie="", path="/", **extra_headers):
+    headers = {"Host": hostname, **extra_headers}
     if cookie:
         headers["Cookie"] = cookie
     if body is not None:
@@ -33,7 +33,7 @@ def request(scheme, hostname, method, body=None, cookie=""):
     else:
         conn = http.client.HTTPConnection("127.0.0.1", timeout=10)
     try:
-        conn.request(method, "/", body, headers)
+        conn.request(method, path, body, headers)
         response = conn.getresponse()
         return response.status, response.headers, response.read().decode(errors="replace")
     finally:
@@ -59,6 +59,7 @@ def login(scheme, hostname, user, password, secure):
     session = cookies(headers).get("lemonldap")
     if not session or not session.value or bool(session["secure"]) != secure:
         raise RuntimeError(f"Expected a {'secure' if secure else 'plain HTTP'} session cookie. Login returned HTTP {status}.")
+    return f"lemonldap={session.coded_value}"
 
 
 if __name__ == "__main__":

@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from ns8_oidc import configure, reconcile, saved_settings
+
+if saved_settings():
+    configure(True)
+    reconcile()
