@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+import json
+import os
+import sys
+
+from ns8_oidc import saved_settings, validation
+
+settings = saved_settings()
+if settings:
+    request = json.load(sys.stdin)
+    for field, variable in (("host", "TRAEFIK_HOST"), ("ldap_domain", "LDAP_DOMAIN")):
+        if request[field] != os.environ.get(variable):
+            validation(field, request[field], "disable_ns8_sso_first")
+    if request.get("http2https") is False:
+        validation("http2https", False, "disable_ns8_sso_first")
