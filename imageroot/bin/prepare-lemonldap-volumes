@@ -1,0 +1,34 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -euo pipefail
+
+# Inspect the selected runtime image without starting the portal or touching
+# its persistent data. The Python helper operates in Podman's UID namespace.
+state="${AGENT_STATE_DIR:?}"
+runtime="${LEMONLDAP_NG_IMAGE:?}"
+marker="$state/lemonldap-volume-version"
+if [[ -f "$marker" && $(<"$marker") == "$runtime" ]]; then
+    exit 0
+fi
+
+etc=""
+conf=""
+if podman volume exists var-conf; then
+    conf=$(podman volume inspect --format '{{.Mountpoint}}' var-conf)
+    if podman unshare /bin/sh -c 'find "$1" -maxdepth 1 -name "lmConf-*.json" -print -quit | grep -q .' sh "$conf"; then
+        etc=$(podman volume inspect --format '{{.Mountpoint}}' etc)
+    else
+        conf=""
+    fi
+fi
+
+if ! podman volume exists nginx; then
+    podman volume create nginx >/dev/null
+fi
+nginx=$(podman volume inspect --format '{{.Mountpoint}}' nginx)
+templates=$(mktemp)
+trap 'rm -f "$templates"' EXIT
+podman run --pull=never --rm --network=none --image-volume=ignore --entrypoint /bin/tar \
+    "$runtime" -C /etc/nginx/sites-enabled-orig -cf - . > "$templates"
+podman unshare python3 "${AGENT_INSTALL_DIR}/pypkg/lemonldap_migrate.py" \
+    "$state" "$runtime" "${TRAEFIK_HOST:?}" "$etc" "$conf" "$nginx" "$templates"

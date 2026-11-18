@@ -8,6 +8,7 @@
 import sys
 import agent
 import os
+from tempfile import NamedTemporaryFile
 
 # Connect the local Redis replica. This is necessary to consistently start
 # the service if the leader node is not reachable:
@@ -18,7 +19,7 @@ envfile = "smarthost.env"
 
 # Using .tmp suffix: do not overwrite the target file until the new one is
 # saved to disk:
-with open(envfile + ".tmp", "w") as efp:
+with NamedTemporaryFile(mode="w", dir=".", delete=False) as efp:
     # HINT for lemonldapng: adjust variable names as needed
     print(f"SMTP_ENABLED={'1' if smtp_settings['enabled'] else ''}", file=efp)
     print(f"SMTP_HOST={smtp_settings['host']}", file=efp)
@@ -36,7 +37,7 @@ with open(envfile + ".tmp", "w") as efp:
         print("SMTP_ENCRYPTION=", file=efp)
 
 # Commit changes by replacing the existing envfile:
-os.replace(envfile + ".tmp", envfile)
+os.replace(efp.name, envfile)
 
 # NOTE: The generated envfile can be included in the service container
 #       with `podman run --env-file` or in Systemd unit with

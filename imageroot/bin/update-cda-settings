@@ -1,41 +1,22 @@
 #!/usr/bin/env python3
-#
 # Copyright (C) 2025 Nethesis S.r.l.
 # SPDX-License-Identifier: GPL-3.0-or-later
-#
-import os, sys, subprocess
-# does CDA is enabled in the UI (default is disabled)
-cda_status = os.getenv("CDA_STATUS", "False") == "True"  # make boolean
-def get_portal_url(https=False):
-    """Fetch the current portal URL and adjust the scheme if needed."""
-    result = subprocess.run(
-        ["podman", "exec", "lemonldapng-app",
-         "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "get", "portal"],
-        capture_output=True, text=True, check=True
-    )
-    url = result.stdout.strip().replace("portal = ", "")
-    return url.replace("http:", "https:") if https else url.replace("https:", "http:")
-# CDA settings is disabled
-if not cda_status:
-    print("CDA is disabled, skipping CDA settings", file=sys.stderr)
-    # Disable the CDA flag and force http
-    portal_url = get_portal_url(https=False)
-    command = [
-        "podman", "exec", "lemonldapng-app",
-        "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "set",
-        "cda", "0",
-        "securedCookie", "0",
-        "portal", portal_url
-    ]
-else:
-    print("CDA is enabled, setting CDA settings", file=sys.stderr)
-    # Enable the CDA flag and force https
-    portal_url = get_portal_url(https=True)
-    command = [
-        "podman", "exec", "lemonldapng-app",
-        "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1", "set",
-        "cda", "1",
-        "securedCookie", "1",
-        "portal", portal_url
-    ]
-subprocess.run(command, stderr=subprocess.DEVNULL, check=True)
+
+import os
+import subprocess
+from urllib.parse import urlsplit, urlunsplit
+
+cli = ["podman", "exec", "lemonldapng-app",
+       "/usr/share/lemonldap-ng/bin/lemonldap-ng-cli", "-yes", "1"]
+cda = os.environ.get("CDA_STATUS", "").lower() == "true"
+portal = subprocess.check_output([*cli, "get", "portal"], text=True).strip()
+url = urlsplit(portal.removeprefix("portal = "))
+if not url.hostname:
+    url = urlsplit(f"http://auth.{os.environ['TRAEFIK_HOST']}/")
+secure = cda or url.scheme == "https" or any(
+    os.environ.get(name, "").lower() == "true"
+    for name in ("TRAEFIK_HTTP2HTTPS", "TRAEFIK_LETS_ENCRYPT")
+)
+portal_url = urlunsplit(url._replace(scheme="https" if secure else "http"))
+subprocess.run([*cli, "set", "cda", str(int(cda)), "securedCookie", str(int(secure)),
+                "portal", portal_url], check=True, stdout=subprocess.DEVNULL)

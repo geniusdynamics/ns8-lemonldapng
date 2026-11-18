@@ -25,14 +25,14 @@ else:
 agent.set_env("LDAP_DOMAIN", ldap_domain)
 
 # Setup cross domain authentication
-cda = data.get("cda_status", False)
+cda = data.get("cda_status", os.getenv("CDA_STATUS", "").lower() == "true")
 if cda:
     agent.set_env("CDA_STATUS", "True")
 else:
     agent.set_env("CDA_STATUS", "False")
 
 # Setup issuerDBSAMLActivation
-issuer_dbsaml_activation = data.get("saml_status", False)
+issuer_dbsaml_activation = data.get("saml_status", os.getenv("SAML_STATUS", "").lower() == "true")
 if issuer_dbsaml_activation:
     agent.set_env("SAML_STATUS", "True")
 else:

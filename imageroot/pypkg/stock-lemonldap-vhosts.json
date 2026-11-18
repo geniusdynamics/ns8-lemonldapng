@@ -1,0 +1,21 @@
+{
+  "api-nginx.conf": [
+    "50a2bcf45c32c24e1ca99b8e81dd3085e6f865b8ea19c48c582eacfdc14f9479"
+  ],
+  "handler-nginx.conf": [
+    "5e7fc616d86253796090a02d630c946892748c39ee6b947012057bac7507b6a6",
+    "93e8f7c9180969b7d8a5e4675f3c9fced4d913a8a1ad24fe26b4f8b09c229885",
+    "a17ff484df482c8cecb51967539e3de129e036f3ee3cb868e74e7422b3c175fc"
+  ],
+  "manager-nginx.conf": [
+    "1ead68a9a3511c39561bf1bc54550d81e46b96a00a0f118c220dc6456370eeb5"
+  ],
+  "portal-nginx.conf": [
+    "abd27328057b74e46273cab3f41ec2adb9a057bc612118ba1e8e870fac576e63",
+    "cc323bb53d89fe6ce701eacf5ea71bcc929b16aa7f6389947e147cad7f0b3c4f"
+  ],
+  "test-nginx.conf": [
+    "ae7cb427622953db4878fd36637efc4f892aa1c7833d504d0761f3e24a89d7f5",
+    "d5caaf16ceed040a0d14583e300b2592f9273b090ab0723378cefc48075d1d8f"
+  ]
+}

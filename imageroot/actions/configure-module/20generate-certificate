@@ -18,5 +18,7 @@ data = json.load(sys.stdin)
 host = data.get("host")
 
 # if the hostname is new we generate the selfsigned certificate, else do nothing
-if host != os.environ.get('TRAEFIK_HOST',''):
+if host != os.environ.get("TRAEFIK_HOST") or not all(
+    os.path.isfile(path) for path in ("certificates/saml.key", "certificates/saml.pem")
+):
     agent.run_helper('generate-certificate',host).check_returncode()
