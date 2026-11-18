@@ -8,23 +8,28 @@
 import sys
 import json
 import agent
+import agent.tasks
 import os
 
 request = json.load(sys.stdin)
 renv = request['environment']
 
 # Boolean conversion helper
-def to_bool(val): return val == "True"
+def to_bool(val):
+    return val.lower() == "true"
 
 # Build configuration data from restored environment
 config_data = {
-    "lets_encrypt": to_bool(renv["TRAEFIK_LETS_ENCRYPT"]),
-    "host": renv["TRAEFIK_HOST"],
-    "http2https": to_bool(renv["TRAEFIK_HTTP2HTTPS"]),
-    "ldap_domain": renv["LDAP_DOMAIN"],
+    "lets_encrypt": False,
+    "host": renv.get("TRAEFIK_HOST", ""),
+    "http2https": to_bool(renv.get("TRAEFIK_HTTP2HTTPS", "True")),
+    "ldap_domain": renv.get("LDAP_DOMAIN", ""),
     "cda_status": to_bool(renv.get("CDA_STATUS", "False")),
     "saml_status": to_bool(renv.get("SAML_STATUS", "False")),
 }
+
+if not config_data["host"]:
+    sys.exit(0)
 
 configure_retval = agent.tasks.run(
     agent_id=os.environ['AGENT_ID'],

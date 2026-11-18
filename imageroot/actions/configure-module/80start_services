@@ -14,4 +14,4 @@ exec 1>&2
 touch smarthost.env
 
 systemctl --user enable lemonldapng.service
-systemctl --user restart lemonldapng.service
+systemctl --user restart lemonldapng.service lemonldapng-app.service
