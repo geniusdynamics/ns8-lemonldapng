@@ -114,7 +114,7 @@ Enable SSO only on request and publish the LDAP issuer
     Run successfully    api-cli run module/${module_id}/configure-ns8-sso --data '{"enabled":true}'
     ${prefix} =    Run successfully    redis-cli --no-auth-warning hget module/${module_id}/srv/http/oidc issuer_url_prefix
     Should Be Equal    ${prefix}${LDAP_DOMAIN}    ${OIDC_ISSUER}
-    ${status} =    Run successfully    curl -ks -o /dev/null -w '%{http_code}' --resolve auth.${HOST}:443:127.0.0.1 ${OIDC_ISSUER}/.well-known/openid-configuration
+    ${status} =    Run successfully    curl -ks -o /dev/null -w '\%{http_code}' --resolve auth.${HOST}:443:127.0.0.1 ${OIDC_ISSUER}/.well-known/openid-configuration
     Should Be Equal As Integers    ${status}    200
 
 Register clients and sign on using the existing LDAP account
