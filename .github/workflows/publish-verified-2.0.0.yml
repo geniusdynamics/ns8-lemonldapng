@@ -1,0 +1,58 @@
+name: Publish the verified LemonLDAP::NG 2.0.0 release
+
+on:
+  push:
+    branches: [publish-2.0.0]
+    paths: [.github/workflows/publish-verified-2.0.0.yml]
+
+permissions: {}
+
+jobs:
+  publish:
+    if: github.repository == 'geniusdynamics/ns8-lemonldapng' && github.event.before == '6dbce4c85cca4f817f7a3292d677abeaa489b0b6'
+    permissions:
+      contents: read
+      packages: write
+    uses: NethServer/ns8-github-actions/.github/workflows/publish-branch.yml@v1
+    with:
+      imagetag: '2.0.0'
+
+  release:
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Publish the release on the verified main commit
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'EOF'
+          ## LemonLDAP::NG 2.23.4
+          
+          - Update the official LemonLDAP::NG image from 2.21.3 to 2.23.4.
+          - Require module 1.1.0 as the update baseline. Fresh installs use 2.0.0
+            directly.
+          - Refresh packaged Nginx virtual hosts and keep the configuration,
+            persistent sessions and operator-defined sites.
+          - Preserve the registered OpenID Connect redirects. Report relying parties
+            that lack explicit logout redirect allowlists in the service journal.
+          
+          ## Before upgrading
+          
+          Review logout redirect allowlists and partner names in the Manager. If
+          LemonLDAP::NG delegates authentication to another OpenID Connect provider,
+          register the portal's `/oauth2/rlogoutreturn` endpoint with that provider.
+          Take an NS8 backup, then verify login and access to your protected
+          applications after the update.
+          
+          [Upstream upgrade guide](https://lemonldap-ng.org/documentation/latest/upgrade.html)
+          
+          ## Verification
+          
+          Rocky 9 fresh install and Debian 13 upgrade from the published 1.1.0 image passed in QEMU. [Test results](https://github.com/geniusdynamics/ns8-lemonldapng/actions/runs/44277015662)
+          EOF
+          gh release create 2.0.0 --target 6dbce4c85cca4f817f7a3292d677abeaa489b0b6 --title '2.0.0 · LemonLDAP::NG 2.23.4' --notes-file release-notes.md
+          gh release view 2.0.0 --json url,tagName,isDraft,isPrerelease
