@@ -40,6 +40,7 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/lemonldapng-app.pid \
         --volume var-sessions:/var/lib/lemonldap-ng/sessions:Z \
         --volume var-psessions:/var/lib/lemonldap-ng/psessions:Z \
         --volume nginx:/etc/nginx/sites-enabled:Z \
+        --volume %h/.config/share/lemonldapng/NS8OIDC.pm:/usr/share/perl5/Lemonldap/NG/Portal/Plugins/NS8OIDC.pm:ro,Z \
         --volume ./llng/theme:/usr/share/lemonldap-ng/portal/htdocs/static/CustomTheme:Z \
         --volume ./llng/template:/usr/share/lemonldap-ng/portal/templates/CustomTheme:Z \
         --volume ./llng/plugins:/usr/share/perl5/Lemonldap/NG/Portal/Plugins/CustomPlugin:Z \
@@ -53,6 +54,7 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/lemonldapng-app.pid \
     ${LEMONLDAP_NG_IMAGE}
 ExecStartPost=/usr/local/bin/runagent apply-lemonldap-settings
 ExecStartPost=/usr/local/bin/runagent wait-lemonldap-portal
+ExecStartPost=-/usr/local/bin/runagent reconcile-ns8-sso --starting
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/lemonldapng-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP lemonldapng-app
 SyslogIdentifier=%u
